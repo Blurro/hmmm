@@ -1,0 +1,89 @@
+{
+    "section1": {
+        "files": [
+            {
+                "url": "crumbs/en/crumbs.json",
+                "type": "json",
+                "key": "crumbs"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/game/iglooedit/iglooedit.json",
+                "path": "assets/media/interface/game/iglooedit/",
+                "key": "iglooedit"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/menus/login/login.json",
+                "path": "assets/media/interface/menus/login/",
+                "key": "login"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/game/main/main.json",
+                "path": "assets/media/interface/game/main/",
+                "key": "main"
+            },
+            {
+                "url": "assets/media/interface/game/main/main-anims.json",
+                "type": "animation",
+                "key": "main-anims"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/game/main-edit/main-edit.json",
+                "path": "assets/media/interface/game/main-edit/",
+                "key": "main-edit"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/game/map/map.json",
+                "path": "assets/media/interface/game/map",
+                "key": "map"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/penguin/penguin.json",
+                "path": "assets/media/penguin/",
+                "key": "penguin"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/penguin/penguin_base.json",
+                "path": "assets/media/penguin/",
+                "key": "penguin_base"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/penguin/penguin_body.json",
+                "path": "assets/media/penguin/",
+                "key": "penguin_body"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/windows/prompt/prompt.json",
+                "path": "assets/media/interface/windows/prompt/",
+                "key": "prompt"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/menus/servers/servers.json",
+                "path": "assets/media/interface/menus/servers/",
+                "key": "servers"
+            },
+            {
+                "type": "multiatlas",
+                "url": "assets/media/interface/menus/start/start.json",
+                "path": "assets/media/interface/menus/start/",
+                "key": "start"
+            }
+        ]
+    },
+    "meta": {
+        "app": "Phaser Editor 2D - Asset Pack Editor",
+        "contentType": "phasereditor2d.pack.core.AssetContentType",
+        "url": "https://phasereditor2d.com",
+        "version": 2,
+        "showAllFilesInBlocks": true
+    }
+}

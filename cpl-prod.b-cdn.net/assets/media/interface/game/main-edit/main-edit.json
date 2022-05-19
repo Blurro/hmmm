@@ -1,0 +1,62 @@
+{
+	"textures": [
+		{
+			"image": "main-edit.png",
+			"format": "RGBA8888",
+			"size": {
+				"w": 90,
+				"h": 136
+			},
+			"scale": 1,
+			"frames": [
+				{
+					"filename": "discord-button-hover",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 100,
+						"h": 100
+					},
+					"spriteSourceSize": {
+						"x": 6,
+						"y": 16,
+						"w": 88,
+						"h": 68
+					},
+					"frame": {
+						"x": 1,
+						"y": 1,
+						"w": 88,
+						"h": 68
+					}
+				},
+				{
+					"filename": "discord-button",
+					"rotated": false,
+					"trimmed": true,
+					"sourceSize": {
+						"w": 100,
+						"h": 100
+					},
+					"spriteSourceSize": {
+						"x": 7,
+						"y": 18,
+						"w": 86,
+						"h": 64
+					},
+					"frame": {
+						"x": 1,
+						"y": 71,
+						"w": 86,
+						"h": 64
+					}
+				}
+			]
+		}
+	],
+	"meta": {
+		"app": "https://www.codeandweb.com/texturepacker",
+		"version": "3.0",
+		"smartupdate": "$TexturePacker:SmartUpdate:9db69a6dd43d2c99e402fcbc98e28959:506b9e4ca9c394381769c03d44cade1d:b9bee1103d02ba89e0696e59e1877153$"
+	}
+}
