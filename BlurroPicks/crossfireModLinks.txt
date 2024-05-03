@@ -1,0 +1,15 @@
+Link to my Crossfire mod files:
+https://mega.nz/folder/z9kA0RaI#-XYt_jUvF9de2r40Odmf_Q
+
+In this folder is:
+
+- The .msz text file (this is only some of the game text, the rest is unfortunately in the actual UI images themselves)
+PUT THIS AT: \CrossFire\rez\NationMsz\CHINA_MSG_DEFINE.msz
+
+- RF192.REZ, the main file I hope to hear results on that I haven't yet been able to test myself. Thousands of images translated, not 100% complete though.
+PUT THIS AT: \CrossFire\rez\rf192.rez  (make sure to fix the name!)
+
+- mszedit.exe which is my tool to unpack and repack .txt from the .msz (you can ignore this)
+
+
+Either reply to the reddit post I made or contact @blurro on Discord, thanks
