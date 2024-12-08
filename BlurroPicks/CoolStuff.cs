@@ -165,6 +165,7 @@ class Program
 
         for (int p = 0; p < pacPathInputList.Count; p++)
         {
+            bool continuePacList = false;
             bool isSwitchFixed = false;
 
             pacPathInput = pacPathInputList[p];
@@ -349,143 +350,182 @@ class Program
                     filePath1 = Path.Combine(exeDirectory, "temp\\" + Path.ChangeExtension(pacSwitchName, null), rflFileName);
                 }
 
-                if (rflFileName == "player_common.rfl")
+                long fileSizeInBytes = 0;
+                int conversionSuccess = 0;
+                while (conversionSuccess < 2)
                 {
-                    long fileSizeInBytes = new FileInfo(filePath2).Length;
-                    if (fileSizeInBytes == 39700)
+                    bool notredo = true;
+                    if (conversionSuccess == 1) // 1 will be the case if we're retrying from last else
                     {
-                        Console.WriteLine("\u001b[35mV1 detected (WONT WORK ON FRONTIERS V1.2+)\u001b[95m");
-                        Console.WriteLine("Check out 'Playercommon Updater' to update!\u001b[37m");
-                        filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_OLD.rfl");
-                        pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_OLD.pac");
-                        pacSwitchName = "playercommon_SWITCH_OLD.pac";
-                        if (!File.Exists(pacPath1))
-                        {
-                            string fileName = Path.GetFileName(pacPath1);
-                            Console.WriteLine("Downloading playercommon_SWITCH V1");
-                            try
-                            {
-                                DownloadFile(fileName);
-                            }
-                            catch
-                            {
-                                Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
-                                Console.ReadKey(true);
-                                Environment.Exit(0);
-                            }
-                        }
-                        RunHedgeArcPack(pacPath1);
+                        notredo = false;
                     }
-                    else if (fileSizeInBytes == 40004)
+                    conversionSuccess = 2; // by default we will exit the loop if this stays 2
+                    if (rflFileName == "player_common.rfl")
                     {
-                        Console.WriteLine("\u001b[35mV1.2 detected (WONT WORK ON FRONTIERS V1/V1.3)\u001b[95m");
-                        Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
-                        if (!File.Exists(pacPath1))
+                        if (notredo)
                         {
-                            string fileName = Path.GetFileName(pacPath1);
-                            Console.WriteLine("Downloading playercommon_SWITCH V1.2");
-                            try
+                            fileSizeInBytes = new FileInfo(filePath2).Length;
+                        }
+                        if (fileSizeInBytes == 39700)
+                        {
+                            Console.WriteLine("\u001b[35mV1 detected (WONT WORK ON FRONTIERS V1.2+)\u001b[95m");
+                            Console.WriteLine("Check out 'Playercommon Updater' to update!\u001b[37m");
+                            filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_OLD.rfl");
+                            pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_OLD.pac");
+                            pacSwitchName = "playercommon_SWITCH_OLD.pac";
+                            if (!File.Exists(pacPath1))
                             {
-                                DownloadFile(fileName);
+                                string fileName = Path.GetFileName(pacPath1);
+                                Console.WriteLine("Downloading playercommon_SWITCH V1");
+                                try
+                                {
+                                    DownloadFile(fileName);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
+                                    Console.ReadKey(true);
+                                    Environment.Exit(0);
+                                }
                             }
-                            catch
+                            RunHedgeArcPack(pacPath1);
+                        }
+                        else if (fileSizeInBytes == 40004)
+                        {
+                            Console.WriteLine("\u001b[35mV1.2 detected (WONT WORK ON FRONTIERS V1/V1.3)\u001b[95m");
+                            Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
+                            if (!File.Exists(pacPath1))
                             {
-                                Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
-                                Console.ReadKey(true);
+                                string fileName = Path.GetFileName(pacPath1);
+                                Console.WriteLine("Downloading playercommon_SWITCH V1.2");
+                                try
+                                {
+                                    DownloadFile(fileName);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
+                                    Console.ReadKey(true);
+                                    Environment.Exit(0);
+                                }
+                            }
+                            RunHedgeArcPack(pacPath1);
+                        }
+                        else if (fileSizeInBytes == 40808)
+                        {
+                            Console.WriteLine("\u001b[35mV1.3 detected (WONT WORK ON FRONTIERS <V1.3)\u001b[95m");
+                            Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
+                            filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u2.rfl");
+                            pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u2.pac");
+                            pacSwitchName = "playercommon_SWITCH_u2.pac";
+                            if (!File.Exists(pacPath1))
+                            {
+                                string fileName = Path.GetFileName(pacPath1);
+                                Console.WriteLine("Downloading playercommon_SWITCH V1.3");
+                                try
+                                {
+                                    DownloadFile(fileName);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
+                                    Console.ReadKey(true);
+                                    Environment.Exit(0);
+                                }
+                            }
+                            RunHedgeArcPack(pacPath1);
+                        }
+                        else if (fileSizeInBytes == 46212)
+                        {
+                            Console.WriteLine("\u001b[35mV1.4 detected (LATEST VER IS 1.41)\u001b[95m");
+                            Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
+                            filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u3.rfl");
+                            pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u3.pac");
+                            pacSwitchName = "playercommon_SWITCH_u3.pac";
+                            if (!File.Exists(pacPath1))
+                            {
+                                string fileName = Path.GetFileName(pacPath1);
+                                Console.WriteLine("Downloading playercommon_SWITCH V1.4");
+                                try
+                                {
+                                    DownloadFile(fileName);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
+                                    Console.ReadKey(true);
+                                    Environment.Exit(0);
+                                }
+                            }
+                            RunHedgeArcPack(pacPath1);
+                        }
+                        else if (fileSizeInBytes == 46564)
+                        {
+                            if (notredo)
+                            {
+                                Console.WriteLine("\u001b[35mV1.41 detected\u001b[95m");
+                                Console.WriteLine("This is the latest as of Dec 2023\u001b[37m");
+                            } else
+                            {
+                                Console.WriteLine("\n\u001b[35mForcing V1.41\u001b[37m");
+                            }
+                            filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u4.rfl");
+                            pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u4.pac");
+                            pacSwitchName = "playercommon_SWITCH_u4.pac";
+                            if (!File.Exists(pacPath1))
+                            {
+                                string fileName = Path.GetFileName(pacPath1);
+                                Console.WriteLine("Downloading playercommon_SWITCH V1.41");
+                                try
+                                {
+                                    DownloadFile(fileName);
+                                }
+                                catch
+                                {
+                                    Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
+                                    Console.ReadKey(true);
+                                    Environment.Exit(0);
+                                }
+                            }
+                            RunHedgeArcPack(pacPath1);
+                        }
+                        else
+                        {
+                            Console.WriteLine("Unknown playercommon, or already Switch converted!\u001b[35m\nIf you're sure of this, press the \u001b[95mD\u001b[35m key\nto attempt PC 1.41 conversion anyway!\u001b[37m");
+                            
+                            var inputKey = ConsoleKey.A;
+                            if (wait)
+                            {
+                                inputKey = Console.ReadKey(true).Key;
+                            }
+                            if (inputKey == ConsoleKey.D)
+                            {
+                                fileSizeInBytes = 46564;
+                            }
+                            else
+                            {
+                                if (pacPathInputList.Count > 1)
+                                {
+                                    continuePacList = true;
+                                    Console.WriteLine("Skipping");
+                                    break;
+                                }
+                                if (delete)
+                                {
+                                    Directory.Delete(Path.Combine(exeDirectory, "temp"), true);
+                                }
                                 Environment.Exit(0);
                             }
+                            conversionSuccess = 1;
                         }
-                        RunHedgeArcPack(pacPath1);
-                    }
-                    else if (fileSizeInBytes == 40808)
-                    {
-                        Console.WriteLine("\u001b[35mV1.3 detected (WONT WORK ON FRONTIERS <V1.3)\u001b[95m");
-                        Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
-                        filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u2.rfl");
-                        pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u2.pac");
-                        pacSwitchName = "playercommon_SWITCH_u2.pac";
-                        if (!File.Exists(pacPath1))
-                        {
-                            string fileName = Path.GetFileName(pacPath1);
-                            Console.WriteLine("Downloading playercommon_SWITCH V1.3");
-                            try
-                            {
-                                DownloadFile(fileName);
-                            }
-                            catch
-                            {
-                                Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
-                                Console.ReadKey(true);
-                                Environment.Exit(0);
-                            }
-                        }
-                        RunHedgeArcPack(pacPath1);
-                    }
-                    else if (fileSizeInBytes == 46212)
-                    {
-                        Console.WriteLine("\u001b[35mV1.4 detected (LATEST VER IS 1.41)\u001b[95m");
-                        Console.WriteLine("Check out 'Playercommon Updater' to change!\u001b[37m");
-                        filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u3.rfl");
-                        pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u3.pac");
-                        pacSwitchName = "playercommon_SWITCH_u3.pac";
-                        if (!File.Exists(pacPath1))
-                        {
-                            string fileName = Path.GetFileName(pacPath1);
-                            Console.WriteLine("Downloading playercommon_SWITCH V1.4");
-                            try
-                            {
-                                DownloadFile(fileName);
-                            }
-                            catch
-                            {
-                                Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
-                                Console.ReadKey(true);
-                                Environment.Exit(0);
-                            }
-                        }
-                        RunHedgeArcPack(pacPath1);
-                    }
-                    else if (fileSizeInBytes == 46564)
-                    {
-                        Console.WriteLine("\u001b[35mV1.41 detected\u001b[95m");
-                        Console.WriteLine("This is the latest as of Dec 2023\u001b[37m");
-                        filePathPC = Path.Combine(exeDirectory, "unmodified_switchfiles\\player_common_PC_u4.rfl");
-                        pacPath1 = Path.Combine(exeDirectory, "unmodified_switchfiles\\playercommon_SWITCH_u4.pac");
-                        pacSwitchName = "playercommon_SWITCH_u4.pac";
-                        if (!File.Exists(pacPath1))
-                        {
-                            string fileName = Path.GetFileName(pacPath1);
-                            Console.WriteLine("Downloading playercommon_SWITCH V1.41");
-                            try
-                            {
-                                DownloadFile(fileName);
-                            }
-                            catch
-                            {
-                                Console.WriteLine("\u001b[31mDownload failed? Ping @blurro\u001b[37m");
-                                Console.ReadKey(true);
-                                Environment.Exit(0);
-                            }
-                        }
-                        RunHedgeArcPack(pacPath1);
                     }
                     else
                     {
-                        Console.WriteLine("Unknown playercommon, or Switch version file!");
-                        if (wait)
-                        {
-                            Console.ReadKey(true);
-                        }
-                        if (delete)
-                        {
-                            Directory.Delete(Path.Combine(exeDirectory, "temp"), true);
-                        }
-                        Environment.Exit(0);
+                        Console.WriteLine("Scanning " + rflFileName);
                     }
-                } else
-                {
-                    Console.WriteLine("Scanning " + rflFileName);
                 }
+                if (continuePacList == true) { break; }
+
                 if (rflFileName == "player_common.rfl") { filePath1 = Path.Combine(exeDirectory, "temp\\" + Path.ChangeExtension(pacSwitchName, null), "player_common.rfl"); }
                 
                 if (!File.Exists(filePathPC))
@@ -530,9 +570,7 @@ class Program
                     long fileSizzle = new FileInfo(filePath2).Length;
                     if (fileSiz != fileSizzle)
                     {
-                        Console.WriteLine();
-                        Console.WriteLine("File sizes didn't match, tell @blurro about this error! (conversion may still work, but not perfectly)");
-                        Console.WriteLine();
+                        Console.WriteLine("Mismatching file lengths, be sure to test for errors!");
                     }
                     //Console.ReadKey();
                 }
@@ -667,6 +705,7 @@ class Program
 
                 continue;
             }
+            if (continuePacList == true) { continue; }
 
             if (!isSwitchFixed)
             {
