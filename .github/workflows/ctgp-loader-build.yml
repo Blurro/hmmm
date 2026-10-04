@@ -69,8 +69,8 @@ jobs:
         run: |
           set -euo pipefail
           cd ctgp-loader-work/output-loader
-          make clean
-          make -j2
+          make TARGET=loader clean
+          make TARGET=loader -j2
           ls -l loader.cxi loader.elf
           sha256sum loader.cxi loader.elf
       - name: Package source and binary
