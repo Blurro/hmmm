@@ -45,8 +45,12 @@ jobs:
           echo "DEVKITARM=$devkitarm" >> "$GITHUB_ENV"
           echo "DEVKITPRO=$devkitpro" >> "$GITHUB_ENV"
           echo "CTRULIB=$ctrulib" >> "$GITHUB_ENV"
+          mkdir -p /tmp/devkit-arm-shims
+          ln -s "$devkitarm/bin/arm-none-eabi-as" /tmp/devkit-arm-shims/as
+          ln -s "$devkitarm/bin/arm-none-eabi-ld" /tmp/devkit-arm-shims/ld
           echo "$(dirname "$makerom")" >> "$GITHUB_PATH"
           echo "$devkitarm/bin" >> "$GITHUB_PATH"
+          echo "/tmp/devkit-arm-shims" >> "$GITHUB_PATH"
       - name: Diagnose archived ARM toolchain
         shell: bash
         run: |
