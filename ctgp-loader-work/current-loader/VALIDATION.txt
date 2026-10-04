@@ -1,0 +1,25 @@
+Fixed8 validation and reproduction
+==================================
+See HANDOFF_FIXED8.txt for crash analysis and limits.
+checks/compiled-results.json: 19 compiled-ELF checks, all passed.
+checks/container-results.json: CXI hashes, identity and access controls passed.
+checks/crash75-results.json: original dump decoded and matched to Fixed7 ELF.
+checks/rosalina-name-results.json: nine captured-ARM byte stores verified.
+checks/ctgp-startup-results.json: unchanged captured-ARM CBC proof from Fixed7.
+
+Build with the supplied Makefile, devkitARM/libctru and makerom on PATH.
+For verification, install Unicorn 2.1.4 in Python 3, then from this directory:
+  python3 checks/verify_loader.py --baseline reference/fixed6-loader.elf --broken reference/fixed7-loader.elf
+  python3 checks/verify_container.py --baseline reference/fixed7-loader.cxi
+  python3 checks/decode_crash.py evidence/crash_dump_00000075.dmp reference/fixed7-loader.elf
+  python3 checks/trace_rosalina_name.py
+  python3 -m zipfile -e evidence/post-unpack-handoff.zip evidence/handoff
+  python3 checks/verify_ctgp_startup.py evidence/handoff/CTGP7-Rosalina-PostUnpack-Handoff-20261003
+
+Ghidra setup/commands: ARM-Tools-Setup-Notes-20261003.txt.
+ghidra-scripts/PrepareArm.java and ArmInspect.java are included.
+analysis/crash75-ghidra-fixed7-exact.txt and fixed8-ghidra.txt were imported
+with retained relocations disabled. Their .text SHA-256 values match the ELFs.
+analysis/ctgp-pre-unpack-ghidra.txt matches the bounded captured prefix.
+The reproduction's coalesced-unmap behavior is a stated model, not an
+observed kernel memory-map history. Physical hardware is unverified.

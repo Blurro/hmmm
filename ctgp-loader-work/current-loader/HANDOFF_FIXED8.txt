@@ -1,0 +1,95 @@
+CTGP-7 Loader Fixed8: crash 75 repair and current handoff
+Updated: 3 October 2026
+======================================================
+
+CRASH 75
+The attached dump names the process "loader". ARM11 core 1 data abort:
+  PC  0x140066B8
+  FAR 0x00000134
+  R5  0x00000130
+  R6  0x08F00000
+  R7  0x00000000
+  DFSR 0x00000805
+The instruction is E5856004, STR r6,[r5,#4]. It writes the late target-side
+installer pointer into the second hook word, site[1], in the ZL installation
+path inlined into LoaderDiag_ThreadMain. The local page alias base is zero.
+All 96 captured code bytes exactly match Fixed7's ELF, beginning 0x1400665C.
+
+This is a Loader mapping regression before Y releases CTGP. It is separate
+from the unresolved original privileged kernel PC-zero crash.
+
+CAUSE AND REPRODUCTION
+The inherited free-range finder queried from 0x01000000 but used the base
+of the whole free region returned by svcQueryMemory. A free region can
+begin at zero, so it could incorrectly select an alias below the search
+window. Fixed7 added a second temporary alias while the first remained
+mapped. With the first at 0 and the second at 0x1000, adjacent mappings can
+coalesce; unmapping the second can then invalidate the first before the
+hook pointer write at 0x134.
+
+The new regression executes the actual Fixed7 ELF with containing-region
+queries and an explicitly stated coalesced-unmap model. It reproduces the
+dump's exact PC 140066B8, write address 134 and value 08F00000. The dump
+does not contain the kernel memory-region history, so the precise internal
+coalescing sequence is an inference supported by this matching reproduction.
+The earlier mocks returned the queried address as the free-region base and
+did not model this behavior. Fixed7's passing tests therefore missed it.
+
+FIXED8 CHANGE
+Only source/loader_diag.c changes among production source files:
+1. Clamp the selected free address to the current search address before
+   alignment. Every selection stays in 0x01000000..0x0EFFFFFF. Reject invalid
+   zero or oversized requested ranges.
+2. For a temporary target-page alias, find three free pages and map only
+   the middle one. A free page on each side prevents simultaneous aliases
+   created by this helper from becoming adjacent.
+In the same reproduction model, aliases now map at 0x01001000 and 0x01003000.
+Unmapping the IV alias preserves the mid-hook alias, and ZL completes.
+
+The existing IV repair remains:
+  0x07001450: C9A8AD0F -> 30F72D2B
+  0x07001D0C: E021C002 -> E51FC8C4
+It fixes the checksum-derived first CBC-IV word. The Rosalina scan still
+runs. Copied early/late ARM gates remain byte-identical to Fixed6. The
+full-page startup fingerprint, same-process check and staged R cleanup stay.
+
+VALIDATION
+- Stock Makefile/RSF devkitARM build passes -Wall -Wextra -Werror.
+- Nineteen checks pass against the compiled Fixed8 ELF, including the exact
+  Fixed7 failure reproduction, realistic-region installation and cancellation,
+  the existing failure guards, first/second R release and register/flag checks.
+- CXI NCCH, exheader, ExeFS and compressed .code hashes verify. Program ID
+  0004013000001302, flags, access control and descriptor match Fixed7.
+- Ghidra disassembly, xrefs and decompilation were used on Fixed7, Fixed8
+  and the actual captured pre-unpack CTGP prefix. Imported memory-block
+  hashes match the original bytes. Source/assembly remains authoritative
+  where decompiler argument types for SVC wrappers are incomplete.
+- The captured-ARM CBC proof is unchanged and included from Fixed7. The
+  name-construction trace also passes with the newly built Loader fixture.
+Tests use explicit fake services and memory-region behavior. They do not
+verify physical-console timing, PS decryption, or hardware boot.
+
+NEXT CONSOLE TEST
+Use this CXI in the existing diagnostic Loader setup as loader.cxi:
+  Y before launch -> wait at early Y hold -> ZL -> first R -> late hold
+  -> X and dump -> second R
+The first check is simply that ZL no longer crashes while Y holds.
+At the late hold, expected [07000100] is EA000000 and [070F24B8] is 30F72D2B.
+Repeat the unmodified control and the reported Rosalina byte change at
+0x24000010, 00 -> 01, as separate runs. Save the two CTGP/MK7 dump pairs and
+record whether second R resumes boot. If it still fails, preserve the new
+crash/trace and whether the late hold was reached.
+
+Original kernel PC-zero and the eight other differing runtime state words
+are unresolved. Those words are not replaced with captured kernel addresses.
+The end goal remains the .3nx port with the remaining kernel fixes.
+
+TOOLS FOR THE NEXT AI
+ARM-Tools-Setup-Notes-20261003.txt is included in the source ZIP and saved
+alongside the archives in the ARM tools Drive folder:
+https://drive.google.com/file/d/1BwcssrNrVel2BYxvMZve7qFv7sh3Z9r-/view?usp=drivesdk
+It covers JDK 21, native execute permissions, the 256 MiB download limit,
+working commands for ELF and raw ARM input, correct snapshot bases and
+disabling reapplication of already-linked ELF relocations. Ghidra scripts
+and reports are included. Large tool archives are already on Drive and are
+not duplicated in this source ZIP.

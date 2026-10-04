@@ -1,0 +1,223 @@
+CTGP-7 v1.08 CommitCompat, revision 6, 2026-10-04
+
+Base: v1.08 r2 LoaderExact, derived from the original v1.07 CTGP sysplugin.
+This build preserves the Loader Fixed8 early Rosalina checksum/IV repair and
+adds a CTGP-local post-unpack commit-hash fix. The supplied handoff correctly
+identified the expected hash, but missed the stack-generated query described below.
+It does not use the later r3 runtime-CRC bypass or D6/Test E trace machinery.
+
+LATEST HARDWARE FINDINGS AND REVISION 6
+The user reports NONE boots with the same revision 5 .3nx only when Nexus ARM9
+reports the Luma hash B3282131. This is a controlled hardware observation from
+the user, not an independently reproduced console result. The early Rosalina
+repair appears effective; the post-unpack commit interception was incomplete.
+The latest DUMP test also did not reach Dump ready and deadlocked. That does
+suggest DUMP may never reach the common patch/unlock path. It does not establish
+what NONE did, and it does not prove that every commit installation was skipped.
+The user withdrew the earlier separate ARM9 exception report; no firmware
+changes are part of this revision.
+
+CONCRETE MISSED QUERY
+The ordinary GetSystemInfo wrapper at 070A8288 is not the real hash-query entry.
+At 07073EB4..07073F54, CTGP constructs a second ARM wrapper and comparison code
+on its own stack. The query at 07073F6C uses BLX R3 with R1=10000, R2=1 and R0
+pointing to the u64 at SP+68. R3 points to the generated SVC 2A stub at SP+20.
+It therefore bypasses the fixed wrapper hook in revision 5. The generated
+comparison then checks B3282131 and executes SUBNE SP,SP,#4 on mismatch.
+That damaged stack explains why merely preserving decrypted startup words did
+not repair the later commit check. The exact eventual console exception still
+depends on subsequent execution; this is not a claimed recreation of PC zero.
+
+Revision 6 redirects this call to the verified, already-filtered ordinary
+wrapper using one ARM BL. The generated comparer remains intact. The real
+captured builder/query/comparer now executes in the ARM fixture: genuine hash
+zero fails without the redirect and is accepted as B3282131 with it. The full
+u64 result and unchanged successful stack position are checked.
+
+DUMP MONITOR REGRESSION
+Revision 5 disabled the Toxt startup monitor throughout DUMP until after unlock.
+Revision 6 restores the earlier pre-hold monitor, excludes monitoring during
+the held capture, and serializes it with snapshot/compatibility mutations.
+Existing Toxt veneers and /Toxt literal redirection are stripped for the clean
+initial dump and restored for the live session. The captured copy-return gate
+assembly itself is unchanged. This corrects an identified mode regression;
+it is not yet proof that the console DUMP deadlock is solved.
+
+EARLIER HOLD FIX RETAINED
+The previous CommitCompat candidate issued raw SVC 35 with the target handle
+in R0. In Rosalina user mode the libctru wrapper passes that handle in R1,
+with R0 initially holding the PID output pointer. That mistake could return
+an invalid-handle error (state E5), withholding unlock in NONE/DUMP/RESTORE.
+The installer now uses the real host svcGetProcessId API through appended
+host-table slot 67; all existing indices stay unchanged. The strict ARM
+fixture checks the real wrapper and reproduces the previous candidate hold.
+
+The old menu displayed Restore ready whenever Dump was off, even in NONE.
+NONE now displays Applying CTGP compatibility while held. Patch failures
+show CTGP compatibility failed plus the state code. Unsupported unpack
+signatures use an explicit failure hold rather than a restore-entry veneer.
+
+INSTALL / FIRST TEST
+Replace the existing CTGP compatibility .3nx in SD:/luma/plugins/ with
+CTGP7-v108-CommitCompat.70.3nx. Do not keep another CTGP .3nx enabled alongside
+it. MENU and the normal Nexus dependencies remain required as in the r2 base.
+Plugin metadata remains version 1.08. No replacement boot.firm or loader.cxi
+is needed: the stacked .3nx contains the Loader and Rosalina plugin entries.
+
+First test with ordinary, unmodified Nexus ARM9 and Dump/Restore = NONE.
+A baked Luma commit hash masks a missed query and is not a valid fix test. The brief post-unpack wait
+releases automatically after the hook is verified; no ZL/R loader test sequence
+is required. Then test DUMP, followed by RESTORE with the clean GOOD post-unpack snapshot
+pair through the existing Restore Snapshots menu. DUMP writes the clean snapshot
+before installing the commit hook. Both snapshot actions complete the common
+patch-and-unlock path directly in the menu, without depending on another
+worker tick. NONE also invokes the same path from the worker/options menu.
+
+PATCH BEHAVIOR
+After final unpack, find exactly one ARM GetSystemInfo wrapper with the full
+push/SVC 2A/pop/two-output-stores/BX LR signature. The known current address
+is 0x070A8288. A complete executable-bound scan verifies uniqueness and accepts
+a moved wrapper and equivalent single-register PUSH/POP encodings.
+
+Find exactly one generated-query setup/consumer: MOV R2,#1; MOV R1,#10000;
+ADD R0,SP,#output; ADD R3,SP,#stub; BLX R3; LDR R1,[SP,#output];
+ADD R3,SP,#compare; MOV R0,R1; BLX R3. The output must be aligned and match
+the load, the compare starts 24 bytes after the stub, and the output follows
+the comparison code. Placement and stack offsets can change. Missing or
+ambiguous signatures hold safely instead of guessing an address. The current
+query is 07073F6C; redirect it using ARM BL to the verified wrapper.
+
+Replace the ordinary wrapper's first instruction with an ARM B to a permanent
+92-byte position-independent trampoline. A dedicated 4 KiB page is allocated
+through MENU, then mapped into this game's free address space within branch
+range. It is outside CTGP's executable, BSS, heap and snapshot-copy ranges.
+MENU's guarded MapPage aliases verify the game mapping and both write sites.
+Validate both original/owned instructions before either write, then install
+the ordinary wrapper first and query redirect second. Read back both and
+restore both originals if verification fails. A wrapper crossing the single
+MapPage alias boundary is declined before any guarded read or game write.
+Occupied mapping candidates are rejected by the kernel, never overwritten.
+
+For R1/type == 0x10000 AND R2/param == 1, every call returns:
+  Result R0 = 0
+  output low word R1 = 0xB3282131
+  output high word R2 = 0
+  R3 = original output pointer; both output words are stored.
+Other calls execute the original SVC 0x2A sequence with the original register,
+stack, flags, output-store and return behavior. No query-time allocation,
+cache maintenance, filesystem work, trace worker, or hook removal occurs.
+The hook remains active after VANILLA feature-worker shutdown. The two game
+changes are the ordinary wrapper entry and generated-query call instruction.
+Global Nexus/K11 identity and other processes do not change.
+
+NORMAL / DUMP / RESTORE ORDER
+Normal: early IV repair -> existing unpack rendezvous -> final copy-return
+hold -> feature preparation -> install/read back commit hook -> unlock 1.
+Dump: same exact post-unpack hold -> clean snapshot write/close -> request 2
+-> feature preparation -> install/read back commit hook -> unlock 1.
+Restore: early snapshot wait -> preflight -> complete MK7 + 3GX copy and
+runtime validation -> request 2 -> feature preparation -> install/read back
+commit hook -> unlock 1. The restored first word is never repaired.
+
+Request 2 is never a runnable state; only flag 1 releases the ARM wait loop.
+The shared release function serializes menu and worker callers with an atomic
+owner, rechecks the request, and makes commit installation/verification the
+final game-code patch before unlock. Diagnostics are written after unlock.
+The pre-hold DUMP monitor and the entire snapshot operation share the atomic
+mutation owner. The monitor is excluded while the late gate is held. Existing
+transient wait/Toxt veneers are stripped for the dump as in the r2 base.
+Short/failed dump writes and incomplete restores keep unlock clear. A failed
+compatibility install also keeps the game held; error -0x227 identifies it.
+The MK7-only dump action likewise calls the shared release directly.
+
+An already-successful installer still checks both live branch sites. Copying
+another snapshot over them causes both to be reinstalled using the same mapping.
+A failed scan/map/write keeps the game held. A can retry restoration.
+The older supplied capture also has this wrapper at 0x070A72C0. Its captured
+first word fails the unchanged restore runtime-header preflight, so this is
+scanner coverage, not a claim that that old snapshot is safe to restore.
+An unsupported unpacker is held at the recognized early body if available.
+The existing early entry scanner still governs support for unrecognized builds.
+
+EARLY STARTUP REPAIR PRESERVED
+Current pre-unpack capture:
+  0x07001450: C9A8AD0F -> 30F72D2B
+  0x07001D0C: E021C002 -> E51FC8C4
+The intermediate E5813408 store at 0x07001BF8 stays intact. No entry-word
+repair or forced saved-PC adjustment is applied. All 27 historical assembly
+export offsets remain at their original v1.07 positions (SacredAsmStart +7920).
+
+SCOPE / REMOVED EXPERIMENTS
+The r2 helper that replaced the global MCU routine with BX LR and NOPed the
+self-checker call now delegates to the commit installer. Those original game
+instructions are left intact. The custom Toxt/Mii/game features from the base
+are otherwise retained. There is no fatal-helper/CRC comparison bypass,
+ccsel assignment, forced framework constructor, global commit spoof, temporary
+identity swap, or 57-call instrumentation. The Loader source is unchanged.
+
+IF IT STILL FAILS
+The existing one-shot startup breadcrumb is now:
+  SD:/luma/dumps/memory/ctgp-startup-v108-commit.bin
+It is 128 bytes, format 2, build revision 6. Phase 5 means the commit hook was
+verified and unlock published; phase 6 means it was declined and execution remains held. It performs
+no query tracing. Send this file plus the latest crash dump and specify normal,
+DUMP, or RESTORE. validation/decode_startup_status.py decodes it.
+
+Status u32 fields:
+  0..15: original r2 startup fields
+  16: commit state (2 success; E1..EC failure)
+  17: wrapper address; 18: installed ARM B
+  19: game trampoline VA; 20: Rosalina source-page VA; 21: target PID
+  22: B3282131; 23: unique-wrapper count; 24: unpack gate state
+  25: generated-query address; 26: its ARM BL; 27: unique-query count
+  31: mode bits (1 DUMP, 2 RESTORE)
+Failure states are described by the decoder. This file reports installation,
+not proof of successful game boot or ccsel publication.
+
+SOURCE / REBUILD
+New files: sysmodules/rosalina/source/ctgp_commit.inc and ctgp_commit_blob.s.
+Integration: ctgp.c; pinned layout padding: ctgp_layout_pad.s.
+Run bash makeplugin.sh with the usual devkitARM/devkitPRO/libctru environment.
+Generated CTGP7.70.3nx is the combined plugin. A source rebuild needs makerom
+and the same base Nexus build prerequisites. Matching release Loader/Rosalina
+ELFs and new validation scripts/results are included for ARM inspection.
+
+VALIDATION LIMITS
+Tests execute the final packaged ARM instructions after self relocations.
+Kernel SVC, MENU allocation/mapping, cache operations and FS replies are fixtures.
+They verify the real user-mode PID wrapper ABI and reproduce the previous
+hold, clean DUMP bytes and write/patch/unlock order, direct GUI restore/unlock,
+failed copy/PID/map holds, correct NONE/DUMP/RESTORE labels, atomic release
+ownership, repeated spoofing, genuine non-commit SVC ABI, unique/moved/bounded
+scans, mount publication, repeated restore, permanent mapping lifetime, the
+actual captured stack-code builder/query/comparer, and original copy-return
+assembly. The snapshot fixture also verifies stripping/reinstating live Toxt.
+VA/PA translation is an identity fixture, and VFP is enabled as on the console.
+They do not emulate full encryption, actual console scheduling, HOME/menu
+performance, real firmware identity, or hardware boot. Hardware verification
+still requires the NONE, DUMP and GOOD-snapshot restore tests above.
+
+RELEASE VERIFICATION
+Binary size: 79632 bytes
+SHA256: ae43f974393c5af8955c06f3dcd8ecdf2143efe648af887a5d1f5cb2b2164b3b
+Checks passed: 364
+  commit-results.json: 259
+  commit-mount-results.json: 60
+  commit-iv-results.json: 28
+  arm-results.json: 17
+
+REPRODUCING VALIDATION
+Use Python 3 + unicorn 2.x. From the extracted source directory, with the
+matching captured files supplied at your chosen paths:
+  python3 validation/check_commit.py CTGP7.70.3nx \
+    validation/current-rosalina.elf GOOD-post-unpack.bin pre-unpack.bin \
+    --old earlier-runtime.bin \
+    --prior-plugin validation/reference/prior-CommitCompat.70.3nx \
+    --prior-elf validation/reference/prior-CommitCompat-rosalina.elf
+The prior binary/ELF are regression inputs, not the release to install.
+Input capture SHA256 values are in validation/commit-release-manifest.json.
+The handoff contains the original firmware/commit diagnosis; its ordinary-
+wrapper-only recommendation missed the generated call. Read these current
+notes first. validation/generated-query-evidence.txt preserves the captured
+builder disassembly. Test results and patches against r2, the first candidate,
+and revision 5 accompany the source.
