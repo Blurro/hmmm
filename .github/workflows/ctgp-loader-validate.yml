@@ -1,0 +1,138 @@
+name: Validate CTGP AutoCompat Loader
+on:
+  push:
+    branches:
+      - chatgpt/ctgp-loader-autocompat-20261004
+    paths:
+      - '.github/workflows/ctgp-loader-validate.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/ctgp-loader-autocompat-20261004
+
+      - name: Verify clean Presence source delta
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          base = Path("ctgp-loader-work/reference/presence-loader")
+          out = Path("ctgp-loader-work/output-loader")
+
+          def files(root):
+              return {p.relative_to(root).as_posix(): p
+                      for p in root.rglob("*") if p.is_file()}
+
+          a, b = files(base), files(out)
+          added = sorted(set(b) - set(a))
+          removed = sorted(set(a) - set(b))
+          changed = []
+          for rel in sorted(set(a) & set(b)):
+              if hashlib.sha256(a[rel].read_bytes()).digest() != hashlib.sha256(b[rel].read_bytes()).digest():
+                  changed.append(rel)
+
+          print("added:", added)
+          print("removed:", removed)
+          print("changed:", changed)
+
+          assert added == ["source/ctgp_compat.c", "source/ctgp_compat_asm.s"]
+          assert removed == []
+          assert changed == ["source/loader.c"]
+
+          loader = b["source/loader.c"].read_text()
+          assert loader.count("CtgpCompat_OnPluginLoaded") == 2
+          assert loader.count("PLGLDR_LoadPlugin(processID, isHomebrew)") == 1
+          assert "assertSuccess(CtgpCompat_OnPluginLoaded(*outProcessHandle, titleId));" in loader
+
+          compat = b["source/ctgp_compat.c"].read_text()
+          asm = b["source/ctgp_compat_asm.s"].read_text()
+          forbidden = ("KEY_ZL", "KEY_ZR", "KEY_X", "KEY_Y", "irrst", "LoaderDiag_", "DumpAll", "RestoreAll")
+          for word in forbidden:
+              assert word not in compat
+              assert word not in asm
+          assert asm.count("0xB3282131") == 1
+          assert "0x07000130" in compat and "0xE8BDDFFF" in compat
+          assert "0x5093C1D4" in compat
+          print("source delta: PASS")
+          PY
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: CTGP-Loader-AutoCompat
+          path: /tmp/ctgp-artifact
+          github-token: ${{ github.token }}
+          run-id: 37238877487
+
+      - name: Verify built ELF and CXI
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo '===== artifact ====='
+          find /tmp/ctgp-artifact -maxdepth 3 -type f -printf '%P %s bytes\n' | sort
+          elf=/tmp/ctgp-artifact/deliverable/loader-autocompat.elf
+          cxi=/tmp/ctgp-artifact/deliverable/loader-autocompat.cxi
+          test -s "$elf"
+          test -s "$cxi"
+          file "$elf" "$cxi"
+          readelf -h "$elf"
+          readelf -sW "$elf" | grep -E 'CtgpCompat_(OnPluginLoaded|CommitBlob|LateTrapStubStart|LateTrapEntry|LateTrapControl)|svc(Map|Unmap)ProcessMemoryEx'
+          if readelf -sW "$elf" | grep -q 'LoaderDiag_'; then
+            echo 'unexpected LoaderDiag symbol in clean AutoCompat ELF'
+            exit 20
+          fi
+
+          python3 - "$elf" "$cxi" <<'PY'
+          import hashlib, re, subprocess, sys
+          elf, cxi = sys.argv[1:]
+
+          h = subprocess.check_output(["readelf", "-h", elf], text=True)
+          assert re.search(r"Machine:\s+ARM", h), h
+
+          syms = subprocess.check_output(["readelf", "-sW", elf], text=True)
+          table = {}
+          for line in syms.splitlines():
+              parts = line.split()
+              if len(parts) >= 8 and parts[0].endswith(":"):
+                  try:
+                      value = int(parts[1], 16)
+                      size = int(parts[2], 10)
+                  except ValueError:
+                      continue
+                  table[parts[-1]] = (value, size)
+
+          required = [
+              "CtgpCompat_OnPluginLoaded",
+              "CtgpCompat_CommitBlob",
+              "CtgpCompat_LateTrapStubStart",
+              "CtgpCompat_LateTrapEntry",
+              "CtgpCompat_LateTrapControl",
+              "svcMapProcessMemoryEx",
+              "svcUnmapProcessMemoryEx",
+          ]
+          for name in required:
+              assert name in table, name
+
+          assert table["CtgpCompat_CommitBlob"][1] == 92, table["CtgpCompat_CommitBlob"]
+          assert table["CtgpCompat_OnPluginLoaded"][0] >= 0x14000000
+
+          data = open(elf, "rb").read()
+          assert data.count(bytes.fromhex("312128b3")) >= 1
+          assert b"LoaderDiag_" not in data
+
+          for path in (elf, cxi):
+              d = hashlib.sha256(open(path, "rb").read()).hexdigest()
+              print(path, d)
+          print("ELF/CXI validation: PASS")
+          PY
+
+          echo '===== source integration diff ====='
+          diff -u ctgp-loader-work/reference/presence-loader/source/loader.c                   ctgp-loader-work/output-loader/source/loader.c || true
