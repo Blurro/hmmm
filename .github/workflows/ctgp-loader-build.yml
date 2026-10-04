@@ -19,7 +19,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p /tmp/fullenv
-          curl -L --fail --retry 3 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-0ab8-81f4-94df-47d8112dbcb0/raw?se=2026-10-04T22%3A03%3A57Z&sp=r&sv=2026-02-06&sr=b&scid=f9e932aa-8287-5f75-9508-015b825b19be&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T08%3A14%3A04Z&ske=2026-10-05T08%3A14%3A04Z&sks=b&skv=2026-02-06&sig=TfXd2siY0hEJ2JbTVnh9lMSXCiVBUDMAFaNzVB7UsDw%3D' -o /tmp/fullenv.zip
+          curl -L --fail --retry 3 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-842c-8210-8fc9-01b704b6b898/raw?se=2026-10-04T22%3A10%3A03Z&sp=r&sv=2026-02-06&sr=b&scid=442799e7-0ea8-5e72-9ac3-34904ee67a8a&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T07%3A25%3A18Z&ske=2026-10-05T07%3A25%3A18Z&sks=b&skv=2026-02-06&sig=ch2VcH5IEyOgxxeoVdW%2BvmDGgMNC3NFbK7gbiLiGmMM%3D' -o /tmp/fullenv.zip
           unzip -q /tmp/fullenv.zip -d /tmp/fullenv
           echo '=== tool roots ==='
           find /tmp/fullenv -type f \( -name arm-none-eabi-gcc -o -name makerom -o -name 3ds_rules \) -print
