@@ -30,7 +30,8 @@ jobs:
           ctrulib="$devkitpro/libctru"
           makerom="$(find /tmp/fullenv -type f -name makerom -print -quit)"
           if [ -z "$makerom" ]; then echo 'makerom not found'; exit 3; fi
-          chmod +x "$devkitarm/bin/"* "$makerom" || true
+          find "$devkitarm/bin" "$devkitarm/libexec" -type f -exec chmod +x {} +
+          chmod +x "$makerom"
           echo "DEVKITARM=$devkitarm" >> "$GITHUB_ENV"
           echo "DEVKITPRO=$devkitpro" >> "$GITHUB_ENV"
           echo "CTRULIB=$ctrulib" >> "$GITHUB_ENV"
