@@ -1,51 +1,129 @@
-name: CTGP Loader Inspect
+name: CTGP Loader Source Slices
 on:
   push:
     branches:
       - chatgpt/ctgp-loader-autocompat-20261004
 
 jobs:
-  inspect:
+  loader_diag_1:
     runs-on: ubuntu-latest
     steps:
-      - name: Download exact source archives
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p /tmp/ctgp-inspect
-          cd /tmp/ctgp-inspect
-          curl -L --fail --retry 3 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o loader.zip
-          curl -L --fail --retry 3 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o ctgp.zip
-          curl -L --fail --retry 3 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-5118-8210-8a39-806aed4ac876/raw?se=2026-10-04T21%3A51%3A45Z&sp=r&sv=2026-02-06&sr=b&scid=29feb452-b7c3-552a-9568-6f0a64b1a24e&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A08Z&ske=2026-10-05T17%3A52%3A08Z&sks=b&skv=2026-02-06&sig=DaO6x6amRpgxvBSDelm7RVtNMwyOLylArD9jMJhwL6A%3D' -o presence.zip
-          unzip -q loader.zip -d loader
-          unzip -q ctgp.zip -d ctgp
-          unzip -q presence.zip -d presence
-          sha256sum loader.zip ctgp.zip presence.zip
-      - name: Print source inventory and relevant implementation
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd /tmp/ctgp-inspect
-          echo '===== LOADER TREE ====='
-          find loader -maxdepth 5 -type f | sort
-          echo '===== CTGP COMMIT FILES ====='
-          find ctgp -type f | grep -E 'ctgp_commit|ctgp\.c$|ctgp_.*\.s$|loader_diag|README|Notes|\.patch$' | sort || true
-          echo '===== PRESENCE LOADER TREE ====='
-          find presence -path '*sysmodules/loader/*' -type f | sort
-          dump_file() {
-            local f="$1"
-            if [ -f "$f" ]; then
-              echo "===== BEGIN $f ====="
-              cat "$f"
-              echo "===== END $f ====="
-            fi
-          }
-          while IFS= read -r f; do
-            case "$f" in
-              *loader_diag.c|*loader_diag.h|*loader_diag.s|*ctgp_commit.inc|*ctgp_commit_blob.s|*ctgp_commit.c|*ctgp.c|*loader.c|*main.c|*Makefile|*loader.rsf|*csvc.c|*csvc.h|*csvc.s)
-                dump_file "$f"
-                ;;
-            esac
-          done < <(find loader ctgp -type f | sort)
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 1-220 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '1,220p'
 
-# trigger
+  loader_diag_2:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 221-440 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '221,440p'
+
+  loader_diag_3:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 441-660 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '441,660p'
+
+  loader_diag_4:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 661-880 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '661,880p'
+
+  loader_diag_5:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 881-1100 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '881,1100p'
+
+  loader_diag_6:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 1101-1320 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '1101,1320p'
+
+  loader_diag_7:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag.c lines 1321-1600 ====='
+          nl -ba /tmp/l/source/loader_diag.c | sed -n '1321,1600p'
+
+  loader_asm:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          echo '===== loader_diag_asm.s lines 1-500 ====='
+          nl -ba /tmp/l/source/loader_diag_asm.s | sed -n '1,500p'
+
+  loader_integration:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/l.zip >/dev/null 2>&1
+          unzip -q /tmp/l.zip -d /tmp/l
+          for f in loader.c main.c; do
+            echo "===== $f LoaderDiag references ====="
+            grep -n -C 8 'LoaderDiag\|loader_diag' /tmp/l/source/$f || true
+          done
+          echo '===== Makefile ====='
+          cat /tmp/l/Makefile
+          echo '===== loader.rsf SVC section ====='
+          sed -n '/SystemCallAccess:/,/InterruptNumbers:/p' /tmp/l/loader.rsf
+  ctgp_commit_inc:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o /tmp/c.zip >/dev/null 2>&1
+          unzip -q /tmp/c.zip -d /tmp/c
+          nl -ba /tmp/c/source/sysmodules/rosalina/source/ctgp_commit.inc
+  ctgp_commit_blob:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o /tmp/c.zip >/dev/null 2>&1
+          unzip -q /tmp/c.zip -d /tmp/c
+          nl -ba /tmp/c/source/sysmodules/rosalina/source/ctgp_commit_blob.s
+  ctgp_refs:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          set -e
+          curl -L --fail 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o /tmp/c.zip >/dev/null 2>&1
+          unzip -q /tmp/c.zip -d /tmp/c
+          echo '===== ctgp.c commit references ====='
+          grep -n -C 12 -E 'CommitCompat|commitCompat|commit_blob|ctgp_commit|B3282131|070A8288|07073F6C' /tmp/c/source/sysmodules/rosalina/source/ctgp.c || true
+          echo '===== ctgp.c gate references ====='
+          grep -n -C 12 -E 'CompatGate|compatGate|g_ctgpCompat|wait|sleep' /tmp/c/source/sysmodules/rosalina/source/ctgp.c | head -n 500 || true
