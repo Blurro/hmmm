@@ -1,0 +1,49 @@
+name: CTGP Loader Inspect
+on:
+  push:
+    branches:
+      - chatgpt/ctgp-loader-autocompat-20261004
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download exact source archives
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/ctgp-inspect
+          cd /tmp/ctgp-inspect
+          curl -L --fail --retry 3 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o loader.zip
+          curl -L --fail --retry 3 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o ctgp.zip
+          curl -L --fail --retry 3 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-5118-8210-8a39-806aed4ac876/raw?se=2026-10-04T21%3A51%3A45Z&sp=r&sv=2026-02-06&sr=b&scid=29feb452-b7c3-552a-9568-6f0a64b1a24e&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A08Z&ske=2026-10-05T17%3A52%3A08Z&sks=b&skv=2026-02-06&sig=DaO6x6amRpgxvBSDelm7RVtNMwyOLylArD9jMJhwL6A%3D' -o presence.zip
+          unzip -q loader.zip -d loader
+          unzip -q ctgp.zip -d ctgp
+          unzip -q presence.zip -d presence
+          sha256sum loader.zip ctgp.zip presence.zip
+      - name: Print source inventory and relevant implementation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd /tmp/ctgp-inspect
+          echo '===== LOADER TREE ====='
+          find loader -maxdepth 5 -type f | sort
+          echo '===== CTGP COMMIT FILES ====='
+          find ctgp -type f | grep -E 'ctgp_commit|ctgp\.c$|ctgp_.*\.s$|loader_diag|README|Notes|\.patch$' | sort || true
+          echo '===== PRESENCE LOADER TREE ====='
+          find presence -path '*sysmodules/loader/*' -type f | sort
+          dump_file() {
+            local f="$1"
+            if [ -f "$f" ]; then
+              echo "===== BEGIN $f ====="
+              cat "$f"
+              echo "===== END $f ====="
+            fi
+          }
+          while IFS= read -r f; do
+            case "$f" in
+              *loader_diag.c|*loader_diag.h|*loader_diag.s|*ctgp_commit.inc|*ctgp_commit_blob.s|*ctgp_commit.c|*ctgp.c|*loader.c|*main.c|*Makefile|*loader.rsf|*csvc.c|*csvc.h|*csvc.s)
+                dump_file "$f"
+                ;;
+            esac
+          done < <(find loader ctgp -type f | sort)
