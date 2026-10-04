@@ -1,11 +1,10 @@
-name: CTGP Loader Bootstrap Exact Sources
+name: CTGP Loader Prepare Clean Base
 on:
   push:
     branches:
       - chatgpt/ctgp-loader-autocompat-20261004
-
 jobs:
-  bootstrap:
+  prepare:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     permissions:
@@ -14,32 +13,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: chatgpt/ctgp-loader-autocompat-20261004
-      - name: Materialize exact source inputs
+      - name: Copy clean Presence3DS Loader base
         run: |
           set -euo pipefail
-          rm -rf ctgp-loader-work /tmp/srcs
-          mkdir -p /tmp/srcs
-          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-0b78-8210-9326-04ccba74ba67/raw?se=2026-10-04T21%3A51%3A40Z&sp=r&sv=2026-02-06&sr=b&scid=e3ca973e-e34c-5d7c-b84b-2dc1c62814f0&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A07Z&ske=2026-10-05T17%3A52%3A07Z&sks=b&skv=2026-02-06&sig=ab0B6mIh6LX1t8HiEEX4jrpqp/zl33egQTqjZpQ/nRk%3D' -o /tmp/srcs/loader.zip
-          curl -L --fail 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-2134-81f4-8205-9ad6da1d6b93/raw?se=2026-10-04T21%3A51%3A43Z&sp=r&sv=2026-02-06&sr=b&scid=b4ec3e6a-0b7e-5c74-9bdd-84987ff53de2&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T09%3A28%3A25Z&ske=2026-10-05T09%3A28%3A25Z&sks=b&skv=2026-02-06&sig=VtwMmRP1xcx14AkD9txnzeLUTRraUT0jzTd8TinY0aU%3D' -o /tmp/srcs/ctgp.zip
-          curl -L --fail 'https://sdmntprdenmarkeast.oaiusercontent.com/files/00000000-5118-8210-8a39-806aed4ac876/raw?se=2026-10-04T21%3A51%3A45Z&sp=r&sv=2026-02-06&sr=b&scid=29feb452-b7c3-552a-9568-6f0a64b1a24e&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T17%3A52%3A08Z&ske=2026-10-05T17%3A52%3A08Z&sks=b&skv=2026-02-06&sig=DaO6x6amRpgxvBSDelm7RVtNMwyOLylArD9jMJhwL6A%3D' -o /tmp/srcs/presence.zip
-          unzip -q /tmp/srcs/loader.zip -d /tmp/srcs/loader
-          unzip -q /tmp/srcs/ctgp.zip -d /tmp/srcs/ctgp
-          unzip -q /tmp/srcs/presence.zip -d /tmp/srcs/presence
-          mkdir -p ctgp-loader-work/current-loader ctgp-loader-work/reference/v108 ctgp-loader-work/reference/presence-loader
-          cp -a /tmp/srcs/loader/source ctgp-loader-work/current-loader/
-          cp /tmp/srcs/loader/Makefile /tmp/srcs/loader/loader.rsf ctgp-loader-work/current-loader/
-          cp /tmp/srcs/loader/HANDOFF_FIXED8.txt /tmp/srcs/loader/README_CONTROLS.txt /tmp/srcs/loader/VALIDATION.txt ctgp-loader-work/current-loader/ || true
-          cp /tmp/srcs/ctgp/source/sysmodules/rosalina/source/ctgp_commit.inc ctgp-loader-work/reference/v108/
-          cp /tmp/srcs/ctgp/source/sysmodules/rosalina/source/ctgp_commit_blob.s ctgp-loader-work/reference/v108/
-          cp /tmp/srcs/ctgp/source/sysmodules/rosalina/source/ctgp.c ctgp-loader-work/reference/v108/
-          cp /tmp/srcs/ctgp/CTGP7-v108-CommitCompat-Notes-20261004.txt ctgp-loader-work/reference/v108/
-          cp -a /tmp/srcs/presence/Presence3DS-master/sysmodules/loader/. ctgp-loader-work/reference/presence-loader/
-          sha256sum /tmp/srcs/loader.zip /tmp/srcs/ctgp.zip /tmp/srcs/presence.zip > ctgp-loader-work/INPUT-SHA256.txt
-      - name: Commit exact working sources
-        run: |
-          set -euo pipefail
+          rm -rf ctgp-loader-work/output-loader
+          cp -a ctgp-loader-work/reference/presence-loader ctgp-loader-work/output-loader
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ctgp-loader-work
-          git commit -m 'Materialize exact CTGP Loader working sources [skip ci]'
+          git add ctgp-loader-work/output-loader
+          git commit -m 'Prepare clean Presence3DS Loader compatibility base [skip ci]'
           git push origin HEAD:chatgpt/ctgp-loader-autocompat-20261004
