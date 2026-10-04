@@ -1,0 +1,89 @@
+name: Build CTGP AutoCompat Loader
+on:
+  push:
+    branches:
+      - chatgpt/ctgp-loader-autocompat-20261004
+    paths:
+      - 'ctgp-loader-work/output-loader/**'
+      - '.github/workflows/ctgp-loader-build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: chatgpt/ctgp-loader-autocompat-20261004
+      - name: Restore exact 3DS build environment
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/fullenv
+          curl -L --fail --retry 3 'https://sdmntprnortheu.oaiusercontent.com/files/00000000-0ab8-81f4-94df-47d8112dbcb0/raw?se=2026-10-04T22%3A03%3A57Z&sp=r&sv=2026-02-06&sr=b&scid=f9e932aa-8287-5f75-9508-015b825b19be&skoid=56822d8b-6cfd-42ed-a00d-1452dca42036&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2026-10-04T08%3A14%3A04Z&ske=2026-10-05T08%3A14%3A04Z&sks=b&skv=2026-02-06&sig=TfXd2siY0hEJ2JbTVnh9lMSXCiVBUDMAFaNzVB7UsDw%3D' -o /tmp/fullenv.zip
+          unzip -q /tmp/fullenv.zip -d /tmp/fullenv
+          echo '=== tool roots ==='
+          find /tmp/fullenv -type f \( -name arm-none-eabi-gcc -o -name makerom -o -name 3ds_rules \) -print
+          gcc="$(find /tmp/fullenv -type f -name arm-none-eabi-gcc -print -quit)"
+          if [ -z "$gcc" ]; then echo 'arm-none-eabi-gcc not found'; exit 2; fi
+          devkitarm="$(dirname "$(dirname "$gcc")")"
+          devkitpro="$(dirname "$devkitarm")"
+          ctrulib="$devkitpro/libctru"
+          makerom="$(find /tmp/fullenv -type f -name makerom -print -quit)"
+          if [ -z "$makerom" ]; then echo 'makerom not found'; exit 3; fi
+          chmod +x "$devkitarm/bin/"* "$makerom" || true
+          echo "DEVKITARM=$devkitarm" >> "$GITHUB_ENV"
+          echo "DEVKITPRO=$devkitpro" >> "$GITHUB_ENV"
+          echo "CTRULIB=$ctrulib" >> "$GITHUB_ENV"
+          echo "$(dirname "$makerom")" >> "$GITHUB_PATH"
+          echo "$devkitarm/bin" >> "$GITHUB_PATH"
+      - name: Build clean Presence Loader plus CTGP compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ctgp-loader-work/output-loader
+          make clean
+          make -j2
+          ls -l loader.cxi loader.elf
+          sha256sum loader.cxi loader.elf
+      - name: Package source and binary
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd ctgp-loader-work
+          rm -rf deliverable
+          mkdir -p deliverable/source
+          cp output-loader/loader.cxi deliverable/loader-autocompat.cxi
+          cp output-loader/loader.elf deliverable/loader-autocompat.elf
+          cp -a output-loader/Makefile output-loader/loader.rsf output-loader/source deliverable/source/
+          cat > deliverable/README.txt <<'EOF'
+          CTGP-7 automatic Loader compatibility build
+
+          Base: clean Presence3DS Loader supplied by the user.
+          Integration: one CtgpCompat_OnPluginLoaded() call immediately after
+          synchronous PLGLDR_LoadPlugin() returns.
+
+          Automatic sequence:
+          1. Detect the exact CTGP pre-unpack startup page.
+          2. Apply the proven Fixed8 CBC/IV startup repair.
+          3. Install the self-restoring 0x07000130 late rendezvous.
+          4. At the post-unpack sleep gate, install the v1.08 r6/r7 CTGP-local
+             GetSystemInfo commit compatibility hook at both query paths.
+          5. Restore the late epilogue and release the target.
+
+          No Y/ZL/ZR/R/X controls. No HID/IRRST listener. No dump/restore path.
+          No global K11 commit identity change. No code.bin injector yet.
+          EOF
+          (cd deliverable && sha256sum loader-autocompat.cxi loader-autocompat.elf > SHA256.txt)
+          zip -qr CTGP-Loader-AutoCompat-Source-and-Binary.zip deliverable
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: CTGP-Loader-AutoCompat
+          path: |
+            ctgp-loader-work/deliverable/loader-autocompat.cxi
+            ctgp-loader-work/deliverable/loader-autocompat.elf
+            ctgp-loader-work/deliverable/README.txt
+            ctgp-loader-work/deliverable/SHA256.txt
+            ctgp-loader-work/CTGP-Loader-AutoCompat-Source-and-Binary.zip
+          if-no-files-found: error
