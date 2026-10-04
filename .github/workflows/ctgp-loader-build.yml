@@ -47,6 +47,19 @@ jobs:
           echo "CTRULIB=$ctrulib" >> "$GITHUB_ENV"
           echo "$(dirname "$makerom")" >> "$GITHUB_PATH"
           echo "$devkitarm/bin" >> "$GITHUB_PATH"
+      - name: Diagnose archived ARM toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "PATH=$PATH"
+          command -v arm-none-eabi-gcc
+          command -v arm-none-eabi-as || true
+          arm-none-eabi-gcc -dumpmachine
+          arm-none-eabi-gcc -print-prog-name=as
+          file "$DEVKITARM/bin/arm-none-eabi-gcc" "$DEVKITARM/bin/arm-none-eabi-as"
+          "$DEVKITARM/bin/arm-none-eabi-as" --version
+          printf '.text\n.arm\nnop\n' | "$DEVKITARM/bin/arm-none-eabi-as" -march=armv6k -o /tmp/armv6k-test.o -
+          file /tmp/armv6k-test.o
       - name: Build clean Presence Loader plus CTGP compatibility
         shell: bash
         run: |
