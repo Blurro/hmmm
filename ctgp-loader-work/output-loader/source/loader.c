@@ -21,6 +21,7 @@ static ControlApplicationMemoryModeOverrideConfig g_memoryOverrideConfig = { 0 }
 
 extern u32 config, multiConfig, bootConfig;
 extern bool isN3DS, isSdMode, nextGamePatchDisabled;
+extern Result CtgpCompat_OnPluginLoaded(Handle process, u64 titleId);
 
 static u64 g_cached_programHandle; // for exheader info only
 static ExHeader_Info g_exheaderInfo;
@@ -460,6 +461,14 @@ static Result LoadProcessImpl(Handle *outProcessHandle, const ExHeader_Info *exh
                 assertSuccess(plgldrInit());
                 assertSuccess(PLGLDR_LoadPlugin(processID, isHomebrew));
                 plgldrExit();
+
+                /*
+                 * plg:ldr is synchronous: the 3GX mapping and Rosalina-side
+                 * loader hook are complete here, while PM still cannot start
+                 * the new application. Keep CTGP compatibility behind this
+                 * one stable integration point for the future code.bin injector.
+                 */
+                assertSuccess(CtgpCompat_OnPluginLoaded(*outProcessHandle, titleId));
             }
         }
     }
