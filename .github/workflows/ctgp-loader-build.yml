@@ -25,12 +25,22 @@ jobs:
           find /tmp/fullenv -type f \( -name arm-none-eabi-gcc -o -name makerom -o -name 3ds_rules \) -print
           gcc="$(find /tmp/fullenv -type f -name arm-none-eabi-gcc -print -quit)"
           if [ -z "$gcc" ]; then echo 'arm-none-eabi-gcc not found'; exit 2; fi
-          devkitarm="$(dirname "$(dirname "$gcc")")"
-          devkitpro="$(dirname "$devkitarm")"
-          ctrulib="$devkitpro/libctru"
+          extracted_devkitarm="$(dirname "$(dirname "$gcc")")"
+          extracted_devkitpro="$(dirname "$extracted_devkitarm")"
           makerom="$(find /tmp/fullenv -type f -name makerom -print -quit)"
           if [ -z "$makerom" ]; then echo 'makerom not found'; exit 3; fi
-          find "$devkitarm/bin" "$devkitarm/libexec" -type f -exec chmod +x {} +
+
+          # The archived toolchain was configured for this absolute prefix.
+          if [ -e /opt/devkitpro ]; then
+            echo '/opt/devkitpro already exists unexpectedly'
+            exit 4
+          fi
+          sudo ln -s "$extracted_devkitpro" /opt/devkitpro
+          devkitpro=/opt/devkitpro
+          devkitarm=/opt/devkitpro/devkitARM
+          ctrulib=/opt/devkitpro/libctru
+
+          find "$extracted_devkitarm/bin" "$extracted_devkitarm/libexec" -type f -exec chmod +x {} +
           chmod +x "$makerom"
           echo "DEVKITARM=$devkitarm" >> "$GITHUB_ENV"
           echo "DEVKITPRO=$devkitpro" >> "$GITHUB_ENV"
