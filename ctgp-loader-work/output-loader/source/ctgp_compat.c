@@ -555,7 +555,7 @@ static Result CtgpCompat_MapExecutable(Handle process, u32 exeSize, u32 *localOu
         return res;
 
     (void)svcInvalidateProcessDataCache(CUR_PROCESS_HANDLE,
-                                        (const void *)local, exeSize);
+                                        local, exeSize);
     *localOut = local;
     return 0;
 }
@@ -758,7 +758,7 @@ static void CtgpCompat_SetWorkerStatus(u32 state, Result result)
     (void)svcFlushEntireDataCache();
     if(g_ctgpProcess && g_ctgpLateRemote)
         (void)svcInvalidateProcessDataCache(g_ctgpProcess,
-                                            (const void *)g_ctgpLateRemote,
+                                            g_ctgpLateRemote,
                                             CTGP_PAGE_SIZE);
 }
 
@@ -785,7 +785,7 @@ static void CtgpCompat_Worker(void *arg)
     while(process && svcWaitSynchronization(process, 0) != 0)
     {
         (void)svcInvalidateProcessDataCache(CUR_PROCESS_HANDLE,
-                                            g_ctgpLatePage,
+                                            (u32)g_ctgpLatePage,
                                             CTGP_PAGE_SIZE);
 
         volatile u32 *ctrl = CtgpCompat_LateControl();
@@ -821,7 +821,7 @@ static void CtgpCompat_Worker(void *arg)
             ctrl[1] = 1u;
             (void)svcFlushEntireDataCache();
             (void)svcInvalidateProcessDataCache(process,
-                                                (const void *)g_ctgpLateRemote,
+                                                g_ctgpLateRemote,
                                                 CTGP_PAGE_SIZE);
             released = true;
             break;
