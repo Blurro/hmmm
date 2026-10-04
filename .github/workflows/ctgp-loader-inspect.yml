@@ -1,25 +1,8 @@
-name: CTGP Loader Prepare Clean Base
+name: CTGP Loader Temporary Workspace
 on:
-  push:
-    branches:
-      - chatgpt/ctgp-loader-autocompat-20261004
+  workflow_dispatch:
 jobs:
-  prepare:
-    if: github.actor != 'github-actions[bot]'
+  noop:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: chatgpt/ctgp-loader-autocompat-20261004
-      - name: Copy clean Presence3DS Loader base
-        run: |
-          set -euo pipefail
-          rm -rf ctgp-loader-work/output-loader
-          cp -a ctgp-loader-work/reference/presence-loader ctgp-loader-work/output-loader
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add ctgp-loader-work/output-loader
-          git commit -m 'Prepare clean Presence3DS Loader compatibility base [skip ci]'
-          git push origin HEAD:chatgpt/ctgp-loader-autocompat-20261004
+      - run: echo "Temporary workspace preserved; no automatic action."
